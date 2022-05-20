@@ -6,6 +6,7 @@ import static graphql.language.AstPrinter.printAstCompact;
 import com.intuit.graphql.orchestrator.batch.DefaultQueryResponseModifier;
 import com.intuit.graphql.orchestrator.batch.QueryResponseModifier;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
+import com.intuit.graphql.orchestrator.xtext.DataFetcherContext;
 import graphql.ExecutionInput;
 import graphql.GraphQLContext;
 import graphql.language.Document;
@@ -17,12 +18,13 @@ import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import java.util.List;
 
-public class RestDataFetcher implements DataFetcher {
+public class RestDataFetcher extends DataFetcherMetadata implements DataFetcher {
 
   private final ServiceMetadata serviceMetadata;
   private final QueryResponseModifier queryResponseModifier = new DefaultQueryResponseModifier();
 
-  public RestDataFetcher(final ServiceMetadata serviceMetadata) {
+  public RestDataFetcher(final ServiceMetadata serviceMetadata, final DataFetcherContext dataFetcherContext) {
+    super(dataFetcherContext);
     this.serviceMetadata = serviceMetadata;
   }
 

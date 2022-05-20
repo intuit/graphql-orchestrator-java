@@ -109,9 +109,9 @@ public class XtextStitcher implements Stitcher {
 
     stitchedTransformedGraph.getFieldResolverContexts().forEach(fieldResolverContext -> {
       FieldResolverBatchLoader fieldResolverDataLoader = FieldResolverBatchLoader
-              .builder()
-              .fieldResolverContext(fieldResolverContext)
-              .build();
+          .builder()
+          .fieldResolverContext(fieldResolverContext)
+          .build();
 
       String batchLoaderKey = FieldResolverDataLoaderUtil.createDataLoaderKeyFrom(fieldResolverContext);
       batchLoaders.put(batchLoaderKey, fieldResolverDataLoader);
@@ -142,7 +142,8 @@ public class XtextStitcher implements Stitcher {
 
     HashMap<String, BatchLoader> batchLoaderMap = new HashMap<>();
     xtextGraphMap.forEach((namespace, graph) -> {
-      if (graph.getServiceProvider().getSeviceType() == ServiceType.GRAPHQL || graph.getServiceProvider().isFederationProvider()) {
+      if (graph.getServiceProvider().getSeviceType() == ServiceType.GRAPHQL || graph.getServiceProvider()
+          .isFederationProvider()) {
         batchLoaderMap.put(namespace,
             GraphQLServiceBatchLoader
                 .newQueryExecutorBatchLoader()
@@ -177,8 +178,8 @@ public class XtextStitcher implements Stitcher {
         final XtextGraph serviceMetadata = graphsByNamespace.get(dataFetcherContext.getNamespace());
         builder.dataFetcher(coordinates,
             dataFetcherContext.getServiceType() == ServiceType.REST
-                ? new RestDataFetcher(serviceMetadata)
-                : new ServiceDataFetcher(serviceMetadata)
+                ? new RestDataFetcher(serviceMetadata, dataFetcherContext)
+                : new ServiceDataFetcher(serviceMetadata, dataFetcherContext)
         );
       } else if (type == RESOLVER_ARGUMENT) {
         final XtextToGraphQLJavaVisitor visitor = XtextToGraphQLJavaVisitor.newBuilder().build();
@@ -192,13 +193,12 @@ public class XtextStitcher implements Stitcher {
                 Collectors.toMap(Function.identity(), d -> queryBuilder.buildQuery(d.getField(), d.getInputType())));
 
         builder.dataFetcher(coordinates, ResolverArgumentDataFetcher.newBuilder()
-            .namespace(dataFetcherContext.getNamespace())
+            .dataFetcherContext(dataFetcherContext)
             .queriesByResolverArgument(map)
             .build()
         );
       } else if (type == RESOLVER_ON_FIELD_DEFINITION) {
-        builder.dataFetcher(coordinates, FieldResolverDirectiveDataFetcher.from(dataFetcherContext)
-        );
+        builder.dataFetcher(coordinates, new FieldResolverDirectiveDataFetcher(dataFetcherContext));
       }
     });
     return builder;

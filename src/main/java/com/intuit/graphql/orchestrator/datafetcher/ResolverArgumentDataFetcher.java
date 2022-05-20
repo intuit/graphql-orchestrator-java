@@ -1,6 +1,7 @@
 package com.intuit.graphql.orchestrator.datafetcher;
 
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentDirective;
+import com.intuit.graphql.orchestrator.xtext.DataFetcherContext;
 import graphql.ExecutionResult;
 import graphql.GraphQLError;
 import graphql.VisibleForTesting;
@@ -23,9 +24,9 @@ import java.util.stream.Collectors;
  * for argument data, injecting the data as arguments to the original query, and sending it to the downstream service
  * that needs the data.
  */
-public class ResolverArgumentDataFetcher implements DataFetcher<CompletableFuture<DataFetcherResult<Object>>> {
+public class ResolverArgumentDataFetcher extends DataFetcherMetadata implements
+    DataFetcher<CompletableFuture<DataFetcherResult<Object>>> {
 
-  private final String namespace;
   private final Map<ResolverArgumentDirective, OperationDefinition> resolverQueryByDirective;
 
   @VisibleForTesting
@@ -35,9 +36,9 @@ public class ResolverArgumentDataFetcher implements DataFetcher<CompletableFutur
   ArgumentResolver argumentResolver;
 
   private ResolverArgumentDataFetcher(final Builder builder) {
-    resolverQueryByDirective = builder.resolverQueryByDirective;
-    namespace = builder.namespace;
-    this.helper = new ResolverArgumentDataFetcherHelper(namespace);
+    super(builder.dataFetcherContext);
+    this.resolverQueryByDirective = builder.resolverQueryByDirective;
+    this.helper = new ResolverArgumentDataFetcherHelper(builder.dataFetcherContext.getNamespace());
     this.argumentResolver = ArgumentResolver.newBuilder().build();
   }
 
@@ -78,7 +79,7 @@ public class ResolverArgumentDataFetcher implements DataFetcher<CompletableFutur
     due to the nature of this data fetcher initially getting argument info before retrieving data. If we don't
     call dispatch, the DataLoader will never call to the downstream service to fetch data.
      */
-    env.getDataLoader(namespace).dispatch();
+    env.getDataLoader(getDataFetcherContext().getNamespace()).dispatch();
 
     return batchLoaderFuture;
   }
@@ -116,7 +117,7 @@ public class ResolverArgumentDataFetcher implements DataFetcher<CompletableFutur
   public static final class Builder {
 
     private Map<ResolverArgumentDirective, OperationDefinition> resolverQueryByDirective = new HashMap<>();
-    private String namespace;
+    private DataFetcherContext dataFetcherContext;
 
     private Builder() {
     }
@@ -126,8 +127,8 @@ public class ResolverArgumentDataFetcher implements DataFetcher<CompletableFutur
       return this;
     }
 
-    public Builder namespace(final String val) {
-      namespace = Objects.requireNonNull(val);
+    public Builder dataFetcherContext(final DataFetcherContext val) {
+      dataFetcherContext = Objects.requireNonNull(val);
       return this;
     }
 

@@ -9,6 +9,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentDirective;
+import com.intuit.graphql.orchestrator.xtext.DataFetcherContext;
 import graphql.ExecutionResult;
 import graphql.ExecutionResultImpl;
 import graphql.GraphqlErrorBuilder;
@@ -88,7 +89,8 @@ public class ResolverArgumentDataFetcherTest {
   public void testBuilder() {
     ResolverArgumentDataFetcher.newBuilder()
         .queriesByResolverArgument(Collections.emptyMap())
-        .namespace("").build();
+        .dataFetcherContext(DataFetcherContext.newBuilder().build())
+        .build();
   }
 
   @Test(expected = NullPointerException.class)
@@ -98,9 +100,8 @@ public class ResolverArgumentDataFetcherTest {
   }
 
   @Test(expected = NullPointerException.class)
-  public void testBuilderNamespaceIsNull() {
-    ResolverArgumentDataFetcher.newBuilder()
-        .namespace(null);
+  public void testBuilderDataFetcherContextIsNull() {
+    ResolverArgumentDataFetcher.newBuilder().dataFetcherContext(null);
   }
 
   @Test
@@ -121,8 +122,8 @@ public class ResolverArgumentDataFetcherTest {
     map.put(debtArgumentResolver, debtQuery);
 
     ResolverArgumentDataFetcher resolverArgumentDataFetcher = ResolverArgumentDataFetcher.newBuilder()
-        .queriesByResolverArgument(map)
-        .namespace(namespace).build();
+        .queriesByResolverArgument(map).dataFetcherContext(DataFetcherContext.newBuilder().namespace(namespace).build())
+        .build();
 
     resolverArgumentDataFetcher.argumentResolver = mockArgumentResolver;
     resolverArgumentDataFetcher.helper = mockHelper;
@@ -158,7 +159,7 @@ public class ResolverArgumentDataFetcherTest {
     map.put(incomeArgumentResolver, incomeQuery);
 
     ResolverArgumentDataFetcher dataFetcher = ResolverArgumentDataFetcher.newBuilder()
-        .namespace(namespace)
+        .dataFetcherContext(DataFetcherContext.newBuilder().namespace(namespace).build())
         .queriesByResolverArgument(map)
         .build();
 
@@ -190,7 +191,7 @@ public class ResolverArgumentDataFetcherTest {
 
     ResolverArgumentDataFetcher resolverArgumentDataFetcher = ResolverArgumentDataFetcher.newBuilder()
         .queriesByResolverArgument(Collections.emptyMap())
-        .namespace(namespace)
+        .dataFetcherContext(DataFetcherContext.newBuilder().namespace(namespace).build())
         .build();
 
     resolverArgumentDataFetcher.argumentResolver = mockArgumentResolver;
