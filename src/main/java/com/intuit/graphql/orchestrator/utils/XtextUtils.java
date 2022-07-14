@@ -322,4 +322,11 @@ public class XtextUtils {
             .collect(Collectors.toList());
   }
 
+  public static boolean containsDirective(FieldDefinition fieldDefinition, String directiveName) {
+    return fieldDefinition.getDirectives().stream()
+        .anyMatch(directive ->
+            StringUtils.equals(directiveName, directive.getDefinition().getName())
+        );
+  }
+
 }

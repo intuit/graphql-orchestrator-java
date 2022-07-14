@@ -3,13 +3,16 @@ package com.intuit.graphql.orchestrator.schema.transform;
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_EXTENDS_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_KEY_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.utils.FederationUtils.isTypeSystemForBaseType;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.toDescriptiveString;
 import static com.intuit.graphql.orchestrator.utils.XtextUtils.definitionContainsDirective;
 import static com.intuit.graphql.orchestrator.utils.XtextUtils.getAllTypes;
 import static com.intuit.graphql.orchestrator.utils.XtextUtils.getTypeSystemDefinition;
+import static graphql.schema.FieldCoordinates.coordinates;
 
 import com.google.common.collect.Streams;
 import com.intuit.graphql.graphQL.EnumTypeDefinition;
+import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.InterfaceTypeDefinition;
 import com.intuit.graphql.graphQL.InterfaceTypeExtensionDefinition;
 import com.intuit.graphql.graphQL.ObjectTypeDefinition;
@@ -17,11 +20,13 @@ import com.intuit.graphql.graphQL.ObjectTypeExtensionDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.graphQL.TypeSystemDefinition;
 import com.intuit.graphql.graphQL.UnionTypeDefinition;
+import com.intuit.graphql.orchestrator.schema.Operation;
 import com.intuit.graphql.orchestrator.schema.SchemaTransformationException;
 import com.intuit.graphql.orchestrator.schema.TypeMetadata;
 import com.intuit.graphql.orchestrator.utils.DescriptionUtils;
 import com.intuit.graphql.orchestrator.utils.FederationUtils;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
+import graphql.schema.FieldCoordinates;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -44,6 +49,9 @@ public class AllTypesTransformer implements Transformer<XtextGraph, XtextGraph> 
                       source.getServiceProvider().getNameSpace()));
             }));
     updateDescWithNamespace(types, source.getServiceProvider().getNameSpace());
+
+    Map<FieldCoordinates, FieldDefinition> fieldCoordinates = collectFieldCoordinates(types);
+    fieldCoordinates.putAll(collectOperationsFieldCoordinates(source.getOperationMap()));
 
     if (source.getServiceProvider().isFederationProvider()) {
       Map<String, TypeDefinition> baseEntities = getAllTypes(source.getXtextResourceSet())
@@ -83,12 +91,14 @@ public class AllTypesTransformer implements Transformer<XtextGraph, XtextGraph> 
           .typeMetadatas(createTypeMetadatas(types))
           .valueTypesByName(valueTypes)
           .entitiesByTypeName(baseEntities)
+          .fieldCoordinates(fieldCoordinates)
           .entityExtensionsByNamespace(extensionEntitiesByNamespace)
       );
     }
 
     return source.transform(builder -> builder
         .types(types)
+        .fieldCoordinates(fieldCoordinates)
         .typeMetadatas(createTypeMetadatas(types))
     );
   }
@@ -121,5 +131,23 @@ public class AllTypesTransformer implements Transformer<XtextGraph, XtextGraph> 
     types.forEach((k, v) -> {
       v.setDesc(DescriptionUtils.attachNamespace(namespace, v.getDesc()));
     });
+  }
+
+  private Map<FieldCoordinates, FieldDefinition> collectOperationsFieldCoordinates(
+      Map<Operation, ObjectTypeDefinition> operationMap) {
+    Map<String, TypeDefinition> operationTypeMap = operationMap.values().stream()
+        .collect(Collectors.toMap(ObjectTypeDefinition::getName, Function.identity()));
+    return collectFieldCoordinates(operationTypeMap);
+  }
+
+  private Map<FieldCoordinates, FieldDefinition> collectFieldCoordinates(Map<String, TypeDefinition> types) {
+    Map<FieldCoordinates, FieldDefinition> output = new HashMap<>();
+    types.forEach( (typeName, typeDefinition) ->
+        getFieldDefinitions(typeDefinition, true)
+            .forEach(fieldDefinition ->
+                    output.put(coordinates(typeName, fieldDefinition.getName()), fieldDefinition)
+            )
+    );
+    return output;
   }
 }

@@ -30,7 +30,10 @@ public interface ServiceMetadata {
 
   FieldResolverContext getFieldResolverContext(FieldCoordinates fieldCoordinates);
 
+  @Deprecated
   boolean isOwnedByEntityExtension(FieldCoordinates fieldCoordinates);
+
+  boolean isOwnedByThisService(FieldCoordinates fieldCoordinates);
 
   boolean isFederationService();
 

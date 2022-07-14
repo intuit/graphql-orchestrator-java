@@ -1,6 +1,9 @@
 package com.intuit.graphql.orchestrator.xtext;
 
+import static java.util.Objects.requireNonNull;
+
 import com.intuit.graphql.graphQL.DirectiveDefinition;
+import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.NamedType;
 import com.intuit.graphql.graphQL.ObjectTypeDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
@@ -13,9 +16,7 @@ import com.intuit.graphql.orchestrator.schema.Operation;
 import com.intuit.graphql.orchestrator.schema.TypeMetadata;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import com.intuit.graphql.utils.XtextTypeUtils;
-import lombok.Getter;
-import org.eclipse.xtext.resource.XtextResourceSet;
-
+import graphql.schema.FieldCoordinates;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -23,8 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
-
-import static java.util.Objects.requireNonNull;
+import lombok.Getter;
+import org.eclipse.xtext.resource.XtextResourceSet;
 
 /**
  * Runtime graph represents the runtime elements required to build the runtime graphql schema. It also contains
@@ -41,6 +42,7 @@ public class XtextGraph {
   private final Map<String, TypeDefinition> types;
   private final Map<String, TypeMetadata> typeMetadatas;
   private final List<FieldResolverContext> fieldResolverContexts;
+  private final Map<FieldCoordinates, FieldDefinition> fieldCoordinates;
 
   private final boolean hasInterfaceOrUnion;
   private final boolean hasFieldResolverDefinition;
@@ -73,6 +75,7 @@ public class XtextGraph {
     entityExtensionMetadatas = builder.entityExtensionMetadatas;
     federationMetadataByNamespace = builder.federationMetadataByNamespace;
     renamedMetadataByNamespace = builder.renamedMetadataByNamespace;
+    fieldCoordinates = builder.fieldCoordinates;
   }
 
   /**
@@ -108,6 +111,7 @@ public class XtextGraph {
     builder.entityExtensionMetadatas = copy.entityExtensionMetadatas;
     builder.federationMetadataByNamespace = copy.federationMetadataByNamespace;
     builder.renamedMetadataByNamespace = copy.renamedMetadataByNamespace;
+    builder.fieldCoordinates = copy.fieldCoordinates;
     return builder;
   }
 
@@ -219,6 +223,7 @@ public class XtextGraph {
     private List<FieldResolverContext> fieldResolverContexts = new ArrayList<>();
     private Map<String, FederationMetadata> federationMetadataByNamespace = new HashMap<>();
     private Map<String, RenamedMetadata> renamedMetadataByNamespace = new HashMap<>();
+    private Map<FieldCoordinates, FieldDefinition> fieldCoordinates = new HashMap<>();
     private boolean hasInterfaceOrUnion = false;
     private boolean hasFieldResolverDefinition = false;
 
@@ -395,6 +400,11 @@ public class XtextGraph {
     public Builder renamedMetadataByNamespace(Map<String, RenamedMetadata> renamedMetadataByNamespace) {
       requireNonNull(renamedMetadataByNamespace);
       this.renamedMetadataByNamespace.putAll(renamedMetadataByNamespace);
+      return this;
+    }
+
+    public Builder fieldCoordinates(Map<FieldCoordinates, FieldDefinition> fieldCoordinates) {
+      this.fieldCoordinates.putAll(fieldCoordinates);
       return this;
     }
 

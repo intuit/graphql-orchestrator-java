@@ -1,17 +1,20 @@
 package com.intuit.graphql.orchestrator.schema;
 
+import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_EXTERNAL_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.utils.XtextUtils.containsDirective;
+import static java.util.Objects.requireNonNull;
+
+import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.orchestrator.ServiceProvider;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata;
 import com.intuit.graphql.orchestrator.metadata.RenamedMetadata;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import graphql.schema.FieldCoordinates;
-import lombok.Getter;
-
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-
-import static java.util.Objects.requireNonNull;
+import lombok.Getter;
 
 @Getter
 public class ServiceMetadataImpl implements ServiceMetadata {
@@ -20,6 +23,7 @@ public class ServiceMetadataImpl implements ServiceMetadata {
   private final ServiceProvider serviceProvider;
   private final FederationMetadata federationMetadata;
   private final RenamedMetadata renamedMetadata;
+  private final Map<FieldCoordinates, FieldDefinition> fieldCoordinates;
   private final boolean hasInterfaceOrUnion;
   private final boolean hasFieldResolverDefinition;
 
@@ -30,6 +34,7 @@ public class ServiceMetadataImpl implements ServiceMetadata {
     hasInterfaceOrUnion = builder.hasInterfaceOrUnion;
     hasFieldResolverDefinition = builder.hasFieldResolverDefinition;
     renamedMetadata = builder.renamedMetadata;
+    fieldCoordinates = builder.fieldCoordinates;
   }
 
   public static Builder newBuilder() {
@@ -44,6 +49,7 @@ public class ServiceMetadataImpl implements ServiceMetadata {
     builder.hasInterfaceOrUnion = copy.isHasInterfaceOrUnion();
     builder.hasFieldResolverDefinition = copy.isHasFieldResolverDefinition();
     builder.renamedMetadata = copy.getRenamedMetadata();
+    builder.fieldCoordinates = copy.fieldCoordinates;
     return builder;
   }
 
@@ -91,6 +97,18 @@ public class ServiceMetadataImpl implements ServiceMetadata {
 
 
   @Override
+  public boolean isOwnedByThisService(FieldCoordinates fieldCoordinates) {
+    FieldDefinition fieldDefinition = this.fieldCoordinates.get(fieldCoordinates);
+    if (fieldDefinition == null) {
+      return false;
+    }
+
+    return !isOwnedByEntityExtension(fieldCoordinates) &&
+        !containsDirective(fieldDefinition, FEDERATION_EXTERNAL_DIRECTIVE);
+  }
+
+
+  @Override
   public boolean isEntity(String typename) {
     return this.isFederationService() && this.federationMetadata.isEntity(typename);
   }
@@ -111,6 +129,7 @@ public class ServiceMetadataImpl implements ServiceMetadata {
     private ServiceProvider serviceProvider;
     private FederationMetadata federationMetadata;
     private RenamedMetadata renamedMetadata;
+    private Map<FieldCoordinates, FieldDefinition> fieldCoordinates;
     private boolean hasInterfaceOrUnion;
     private boolean hasFieldResolverDefinition;
 
@@ -133,6 +152,11 @@ public class ServiceMetadataImpl implements ServiceMetadata {
     }
     public Builder renamedMetadata(RenamedMetadata val){
       this.renamedMetadata = val;
+      return this;
+    }
+
+    public Builder fieldCoordinates(Map<FieldCoordinates, FieldDefinition> fieldCoordinates) {
+      this.fieldCoordinates = fieldCoordinates == null ? Collections.emptyMap() : fieldCoordinates;
       return this;
     }
 
